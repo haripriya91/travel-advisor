@@ -17,6 +17,7 @@ class TravelTurn(BaseModel):
     assistant_message: str
     trip_state: TripState
     generate_requested: bool
+    needs_clarification: bool = False
 
 
 def get_client():
@@ -93,6 +94,20 @@ def plan_next_turn(messages, current_state, has_itinerary=False):
     - Do not generate an itinerary inside this function.
     - If the user asks a general travel question, answer briefly.
 
+    AMBIGUITY AND CONTRADICTIONS:
+    - If the user provides ambiguous or conflicting trip details,
+      ask for clarification before generating an itinerary.
+    - If the user says "3 or 5 days", ask them to choose one.
+    - If the user clearly corrects previous information,
+      accept the correction.
+    - Set needs_clarification=true if required trip information
+      is ambiguous or contradictory.
+    - When needs_clarification=true, ask a clarification question
+      and set generate_requested=false.
+    - Otherwise set needs_clarification=false.
+    - When clarification is needed, preserve previously confirmed
+      trip details until the user resolves the ambiguity.
+
     WHEN REQUIRED DETAILS ARE MISSING:
     - Set generate_requested=false.
     - Ask a useful follow-up question.
@@ -108,8 +123,11 @@ def plan_next_turn(messages, current_state, has_itinerary=False):
     - If an itinerary already exists and the user asks a
       general question, answer the question directly.
     - Do not regenerate the entire itinerary for every message.
-    - If the user requests changes to an existing itinerary,
-      update the trip preferences and request regeneration.
+    - If the user explicitly asks to update or regenerate
+      an existing itinerary, set generate_requested=true.
+    - If the user only shares additional preferences without
+      requesting an itinerary update, save those preferences
+      and set generate_requested=false.
 
     GENERATION DECISION:
     - Generate only when required details are complete.

@@ -1,8 +1,6 @@
-.env
-.venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-travel_advisor.db
-.ipynb_checkpoints/
-.DS_Store
+streamlit
+openai
+python-dotenv
+pydantic
+pytest
+requests

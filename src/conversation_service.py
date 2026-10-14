@@ -54,12 +54,6 @@ def has_required_details(state: TripState) -> bool:
     )
 
 
-def trip_details_changed(old_state, new_state):
-    """Check whether the collected trip information changed."""
-
-    return old_state.model_dump() != new_state.model_dump()
-
-
 def handle_user_message(conversation_id, user_text):
     """Process a message and generate an itinerary when appropriate."""
 
@@ -108,27 +102,26 @@ def handle_user_message(conversation_id, user_text):
 
     state = result.trip_state
 
-    # Step 7: Check whether the trip details changed.
-    details_changed = trip_details_changed(
-        current_state,
-        state,
-    )
+    # Step 7: Save updated trip information.
+    # Preserve confirmed details when clarification is needed.
 
-    # Step 8: Save updated trip information.
-    save_trip_state(
-        conversation_id,
-        state.model_dump(),
-    )
+    if result.needs_clarification:
+        state = current_state
+    else:
+        save_trip_state(
+            conversation_id,
+            state.model_dump(),
+        )
 
-    # Step 9: Update the conversation title.
+    # Step 8: Update the conversation title.
     if state.destination and state.destination.strip():
         update_conversation_title(
             conversation_id,
             f"{state.destination.strip()} Trip",
         )
 
-    # Step 10: Ask follow-up questions when details are missing.
-    if not has_required_details(state):
+    # Step 9: Ask follow-up questions when details are missing.
+    if result.needs_clarification or not has_required_details(state):
 
         reply = result.assistant_message
 
@@ -140,20 +133,33 @@ def handle_user_message(conversation_id, user_text):
 
         return reply
 
-    # Step 11: Decide whether to generate an itinerary.
+    # Step 10: Decide whether to generate an itinerary.
     #
-    # New trip:
-    # Generate when the model requests generation.
+    # Generate when:
+    # 1. OpenAI requests itinerary generation.
+    # 2. An existing trip's destination, duration,
+    #    or traveler count changes.
     #
-    # Existing trip:
-    # Generate only when the user requests a new or updated plan.
-    #
-    # Changing trip information alone does not force regeneration.
+    # Do not generate when clarification is needed.
 
-    should_generate = result.generate_requested
+    major_details_changed = (
+        current_state.destination != state.destination
+        or current_state.duration_days != state.duration_days
+        or current_state.travelers != state.travelers
+    )
+
+    should_generate = (
+        not result.needs_clarification
+        and (
+            result.generate_requested
+            or (
+                has_itinerary
+                and major_details_changed
+            )
+        )
+    )
 
     if not should_generate:
-
         reply = result.assistant_message
 
         save_message(
@@ -163,11 +169,11 @@ def handle_user_message(conversation_id, user_text):
         )
 
         return reply
-
-    # Step 12: Generate the itinerary.
+    
+    # Step 11: Generate the itinerary.
     itinerary = generate_itinerary(state)
 
-    # Step 13: Validate the itinerary with Pydantic.
+    # Step 12: Validate the itinerary with Pydantic.
     validated_itinerary = TravelItinerary.model_validate(
         itinerary.model_dump()
     )
@@ -181,13 +187,13 @@ def handle_user_message(conversation_id, user_text):
     # Normalize destination to the requested destination.
     validated_itinerary.destination = state.destination.strip()
 
-    # Step 14: Save the itinerary to SQLite.
+    # Step 13: Save the itinerary to SQLite.
     save_itinerary(
         conversation_id,
         validated_itinerary.model_dump(),
     )
 
-    # Step 15: Prepare assistant reply.
+    # Step 14: Prepare assistant reply.
     reply = (
         f"I've prepared your {state.duration_days}-day "
         f"trip to {state.destination} "
