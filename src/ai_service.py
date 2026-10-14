@@ -8,8 +8,13 @@ from pydantic import BaseModel
 from src.schemas import TripState, TravelItinerary
 from src.usage_service import extract_usage, save_api_usage
 
+from datetime import date                      
+from src.tools import FUNCTION_TOOLS, run_tool 
 
 load_dotenv()
+
+MAX_TOOL_ROUNDS = 5                            
+WEB_SEARCH_TOOL = {"type": "web_search"}     
 
 
 class TravelTurn(BaseModel):
@@ -70,7 +75,46 @@ def log_usage(response, task):
     save_api_usage(usage_data)
 
 
-def plan_next_turn(messages, current_state, has_itinerary=False):
+
+
+def summarize_itinerary(itinerary: dict) -> str:
+    """Turn a saved itinerary into compact text the model can read."""
+    currency = itinerary.get("currency", "EUR")
+
+    lines = [
+        f"Title: {itinerary['title']}",
+        f"Summary: {itinerary['summary']}",
+    ]
+
+    for day in itinerary["days"]:
+        lines.append(f"Day {day['day']}: {day['title']}")
+        for activity in day["activities"]:
+            lines.append(
+                f"  - {activity['time']} {activity['title']} "
+                f"(~{activity['estimated_cost']:.0f} {currency}): "
+                f"{activity['description']}"
+            )
+
+    lines.append("Tips: " + "; ".join(itinerary["practical_tips"]))
+    lines.append(
+        f"Estimated budget: {itinerary['estimated_budget']:.0f} "
+        f"{currency} ({itinerary['budget_basis']})"
+    )
+
+    if itinerary.get("weather_summary"):
+        lines.append("Weather: " + itinerary["weather_summary"])
+
+    if itinerary.get("transport_tips"):
+        lines.append("Transport: " + "; ".join(itinerary["transport_tips"]))
+
+    if itinerary.get("currency_note"):
+        lines.append("Currency: " + itinerary["currency_note"])
+
+    return "\n".join(lines)
+
+
+
+def plan_next_turn(messages, current_state, itinerary=None):
     """
     Extract trip preferences and determine the next action.
 
@@ -96,6 +140,7 @@ def plan_next_turn(messages, current_state, has_itinerary=False):
     - Budget
     - Travel preferences
     - Constraints
+    - Start date (store as YYYY-MM-DD; used for weather forecasts)
 
     CONVERSATION RULES:
     - Preserve previously collected trip information.
@@ -111,6 +156,8 @@ def plan_next_turn(messages, current_state, has_itinerary=False):
     - Do not repeatedly ask about optional information.
     - Do not generate an itinerary inside this function.
     - If the user asks a general travel question, answer briefly.
+    - If the user's information is contradictory or ambiguous,
+      ask for clarification and set generate_requested=false.
 
     AMBIGUITY AND CONTRADICTIONS:
     - If the user provides ambiguous or conflicting trip details,
@@ -126,6 +173,15 @@ def plan_next_turn(messages, current_state, has_itinerary=False):
     - When clarification is needed, preserve previously confirmed
       trip details until the user resolves the ambiguity.
 
+    TOOLS:
+    - Use get_weather_forecast when the user asks about weather.
+    - Use convert_currency when the user asks about exchange rates
+      or prices in another currency.
+    - Never guess weather or exchange rates. Call the tool, then
+      answer briefly using its result.
+    - If a tool returns an error, tell the user plainly.
+    - Do not call tools unless the user asks about these topics.
+
     WHEN REQUIRED DETAILS ARE MISSING:
     - Set generate_requested=false.
     - Ask a useful follow-up question.
@@ -140,6 +196,9 @@ def plan_next_turn(messages, current_state, has_itinerary=False):
     EXISTING ITINERARY RULES:
     - If an itinerary already exists and the user asks a
       general question, answer the question directly.
+    - The current itinerary is included in the input. Use it to
+      answer questions about specific days, activities, costs or
+      tips. Never say you cannot see the itinerary.
     - Do not regenerate the entire itinerary for every message.
     - If the user explicitly asks to update or regenerate
       an existing itinerary, set generate_requested=true.
@@ -160,27 +219,34 @@ def plan_next_turn(messages, current_state, has_itinerary=False):
     Return a structured TravelTurn response.
     """
 
-    response = client.responses.parse(
-        model=get_model(),
+    itinerary_text = (
+        summarize_itinerary(itinerary) if itinerary else "None yet"
+    )
+
+    input_items = [
+        {
+            "role": "user",
+            "content": (
+                "Today's date: " + date.today().isoformat()
+                + "\n\nPreviously collected trip state:\n"
+                + json.dumps(current_state)
+                + "\n\nExisting itinerary:\n"
+                + itinerary_text
+            ),
+        },
+        *messages,
+    ]
+
+    response = run_with_tools(
+        client,
         instructions=instructions,
-        input=[
-            {
-                "role": "user",
-                "content": (
-                    "Previously collected trip state:\n"
-                    + json.dumps(current_state)
-                    + "\n\nExisting itinerary: "
-                    + str(has_itinerary)
-                ),
-            },
-            *messages,
-        ],
+        input_items=input_items,
+        tools=FUNCTION_TOOLS,
         text_format=TravelTurn,
+        task="Conversation",
     )
 
     result = response.output_parsed
-
-    log_usage(response, "Conversation")
 
     if result is None:
         raise RuntimeError(
@@ -190,12 +256,18 @@ def plan_next_turn(messages, current_state, has_itinerary=False):
     return result
 
 
-def generate_itinerary(trip_state: TripState):
+def generate_itinerary(trip_state: TripState): 
     """
     Generate an itinerary using the collected trip preferences.
     """
 
     client = get_client()
+    
+    try:
+      research_notes = research_trip(trip_state)
+    except Exception as exc:
+      print("Research failed, continuing without it:", exc)
+      research_notes = "Research unavailable."
 
     instructions = """
     You are TravelAdvisor AI, an expert travel itinerary planner.
@@ -218,8 +290,7 @@ def generate_itinerary(trip_state: TripState):
     - State whether the budget is per person or for the whole group.
     - Avoid double-counting shared costs such as accommodation.
     - Clearly label all costs as estimates.
-    - Do not claim to have checked live prices, weather,
-      opening hours, or transport availability.
+    - Do not claim opening hours or live prices were checked.
     - Do not invent additional user preferences.
 
     Return the itinerary using the required schema.
@@ -234,6 +305,8 @@ def generate_itinerary(trip_state: TripState):
                 "content": (
                     "Generate an itinerary for:\n"
                     + trip_state.model_dump_json(indent=2)
+                    + "\n\nResearch notes:\n"
+                    + research_notes
                 ),
             }
         ],
@@ -249,4 +322,101 @@ def generate_itinerary(trip_state: TripState):
             "OpenAI did not return a valid itinerary."
         )
 
-    return itinerary
+    return itinerary 
+
+def research_trip(trip_state: TripState) -> str:
+    """
+    Gather external information before writing the itinerary.
+    A failure here must never block itinerary generation.
+    """
+
+    client = get_client()
+
+    instructions = f"""
+    You are a travel researcher. Today's date is {date.today().isoformat()}.
+
+    Gather facts for the trip below and return short research notes.
+
+    1. Call get_weather_forecast for the destination (use start_date
+       and duration if known). If it errors because the trip is too far
+       away, say so.
+    2. Find the local currency, then call convert_currency to get the
+       rate from the trip currency to the local currency.
+    3. Use web search to find how to get from the main airport to the
+       city centre and the best way to get around the city (passes,
+       apps, typical costs).
+
+    Output sections: WEATHER, CURRENCY, TRANSPORT.
+    Only include facts you actually retrieved. If something could not
+    be found, write "not available". Keep it under 250 words.
+    """
+
+    response = run_with_tools(
+        client,
+        instructions=instructions,
+        input_items=[
+            {
+                "role": "user",
+                "content": "Trip details:\n" + trip_state.model_dump_json(indent=2),
+            }
+        ],
+        tools=[WEB_SEARCH_TOOL, *FUNCTION_TOOLS],
+        task="Research",
+    )
+
+    return response.output_text
+
+def run_with_tools(client, *, instructions, input_items, tools, text_format=None, task="call"):
+    """
+    Call the model and keep executing function calls until it
+    produces a final answer.
+
+    Loop:
+      1. Send input + tool definitions.
+      2. If the model asks for function calls, run them locally.
+      3. Append the calls and their outputs to the input.
+      4. Call the model again so it can use the results.
+
+    Built-in tools like web_search run on OpenAI's side, so they
+    never show up as function_call items here.
+    """
+
+    input_items = list(input_items)
+
+    for _ in range(MAX_TOOL_ROUNDS):
+        kwargs = dict(
+            model=get_model(),
+            instructions=instructions,
+            input=input_items,
+            tools=tools,
+        )
+
+        if text_format is not None:
+            response = client.responses.parse(text_format=text_format, **kwargs)
+        else:
+            response = client.responses.create(**kwargs)
+
+        log_usage(response, task)
+
+        function_calls = [
+            item for item in response.output
+            if item.type == "function_call"
+        ]
+
+        if not function_calls:
+            return response
+
+        input_items += response.output
+
+        for call in function_calls:
+            print(f"Tool call: {call.name}({call.arguments})")
+
+            input_items.append(
+                {
+                    "type": "function_call_output",
+                    "call_id": call.call_id,
+                    "output": run_tool(call.name, call.arguments),
+                }
+            )
+
+    raise RuntimeError("Model exceeded the maximum number of tool rounds.")
