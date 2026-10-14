@@ -6,6 +6,7 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from src.schemas import TripState, TravelItinerary
+from src.usage_service import extract_usage, save_api_usage
 
 
 load_dotenv()
@@ -44,12 +45,29 @@ def get_model():
 
 
 def log_usage(response, task):
-    """Print token usage for development."""
+    """Log OpenAI usage and save it to SQLite."""
 
-    if response.usage:
-        print(f"\nTask: {task}")
-        print("Input tokens:", response.usage.input_tokens)
-        print("Output tokens:", response.usage.output_tokens)
+    usage_data = extract_usage(response, task)
+
+    if usage_data is None:
+        return
+
+    print(f"\nTask: {usage_data['task']}")
+    print("Model:", usage_data["model"])
+    print("Input tokens:", usage_data["input_tokens"])
+    print("Output tokens:", usage_data["output_tokens"])
+    print("Cached tokens:", usage_data["cached_tokens"])
+    print("Total tokens:", usage_data["total_tokens"])
+
+    if usage_data["estimated_cost_usd"] is not None:
+        print(
+            "Estimated cost: "
+            f"${usage_data['estimated_cost_usd']:.6f}"
+        )
+    else:
+        print("Estimated cost: unavailable for this model")
+
+    save_api_usage(usage_data)
 
 
 def plan_next_turn(messages, current_state, has_itinerary=False):

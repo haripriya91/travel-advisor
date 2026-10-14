@@ -1,6 +1,7 @@
 
 import streamlit as st
 
+from src.usage_service import get_usage_summary
 from src.database import create_tables
 from src.repository import (
     get_itinerary,
@@ -72,6 +73,38 @@ with st.sidebar:
     )
 
     st.session_state["conversation_id"] = selected_id
+
+    st.divider()
+    
+    st.subheader("📊 API Usage")
+
+    usage_summary = get_usage_summary()
+
+    st.metric(
+        "Total API Requests",
+        usage_summary["request_count"],
+    )
+
+    st.metric(
+        "Total Tokens",
+        f"{usage_summary['total_tokens']:,}",
+    )
+
+    if (
+        usage_summary["priced_requests"]
+        == usage_summary["request_count"]
+    ):
+        st.metric(
+            "Estimated API Cost",
+            f"${(usage_summary['total_cost_usd'] or 0):.6f}",
+        )
+    else:
+        st.caption(
+            "Total cost unavailable: some models "
+            "do not have configured pricing."
+        )
+
+    st.caption("Local usage history · Estimated USD")
 
 
 # --------------------------------------------------
