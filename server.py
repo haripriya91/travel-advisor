@@ -152,11 +152,3 @@ def currency(request: CurrencyRequest):
             detail=f"Currency conversion failed: {error}",
         )
 
-from fastapi.staticfiles import StaticFiles
-
-app.mount(
-    "/",
-    StaticFiles(directory="public", html=True),
-    name="frontend",
-) 
-
