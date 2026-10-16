@@ -806,7 +806,30 @@ input:focus-visible {
     padding: 9px;
     font-size: 12px;
   }
+} 
+
+
+.itinerary-image-container {
+  width: 100%;
+  max-width: 380px;
+  height: 120px;
+  margin: 8px 0 12px;
+  overflow: hidden;
+  border-radius: 8px;
 }
+
+.itinerary-destination-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.itinerary-destination-image[hidden] {
+  display: none;
+}
+
 
 }
 

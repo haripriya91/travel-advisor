@@ -385,13 +385,46 @@ function renderItinerary(itinerary) {
     return;
   }
 
-  addText(itineraryEl, "h2", itinerary.title);
-  addText(
-    itineraryEl,
-    "p",
-    itinerary.summary,
-    "itinerary-summary"
-  );
+  
+addText(itineraryEl, "h2", itinerary.title);
+
+// Create a separate image container above the summary.
+const imageContainer = document.createElement("div");
+imageContainer.className = "itinerary-image-container";
+
+const destinationImage = document.createElement("img");
+destinationImage.className = "itinerary-destination-image";
+destinationImage.alt = `Travel destination: ${itinerary.destination}`;
+destinationImage.hidden = true;
+
+imageContainer.appendChild(destinationImage);
+itineraryEl.appendChild(imageContainer);
+
+// Request the image in the background.
+// If image generation fails, the itinerary still works.
+api("/api/tools/destination-image", {
+  method: "POST",
+  body: JSON.stringify({
+    destination: itinerary.destination
+  })
+})
+  .then((data) => {
+    destinationImage.src = data.image_url;
+    destinationImage.hidden = false;
+  })
+  .catch((error) => {
+    console.error("Could not load destination image:", error);
+    imageContainer.remove();
+  });
+
+// Keep the summary as a separate text element.
+addText(
+  itineraryEl,
+  "p",
+  itinerary.summary,
+  "itinerary-summary"
+);
+
 
   // Days and activities
   for (const day of itinerary.days || []) {

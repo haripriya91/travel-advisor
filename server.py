@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 from datetime import date
 from src.tools import get_weather_forecast, convert_currency
 
+from src.ai_service import generate_destination_image
+
 from src.conversation_service import (
     start_conversation,
     handle_user_message,
@@ -37,6 +39,9 @@ class CurrencyRequest(BaseModel):
     amount: float = Field(gt=0)
     from_currency: str = Field(min_length=3, max_length=3)
     to_currency: str = Field(min_length=3, max_length=3)
+
+class DestinationImageRequest(BaseModel):
+    destination: str = Field(min_length=1, max_length=150) 
 
 
 @app.get("/api/health")
@@ -153,6 +158,22 @@ def currency(request: CurrencyRequest):
         )
 
 from fastapi.staticfiles import StaticFiles
+
+
+@app.post("/api/tools/destination-image")
+def destination_image(request: DestinationImageRequest):
+    try:
+        image_url = generate_destination_image(
+            request.destination
+        )
+        return {"image_url": image_url}
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Destination image generation failed: {error}",
+        )
+
 
 app.mount(
     "/",

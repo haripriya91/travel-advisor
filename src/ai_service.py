@@ -11,6 +11,10 @@ from src.usage_service import extract_usage, save_api_usage
 from datetime import date                      
 from src.tools import FUNCTION_TOOLS, run_tool 
 
+import base64
+import hashlib
+from pathlib import Path
+
 load_dotenv()
 
 MAX_TOOL_ROUNDS = 5                            
@@ -420,3 +424,54 @@ def run_with_tools(client, *, instructions, input_items, tools, text_format=None
             )
 
     raise RuntimeError("Model exceeded the maximum number of tool rounds.")
+
+
+def generate_destination_image(destination: str) -> str:
+    """
+    Generate one image per destination and reuse it on later requests.
+    Returns the image URL served by our FastAPI app.
+    """
+
+    destination = destination.strip()
+    if not destination:
+        raise ValueError("Destination is required.")
+
+    # Store generated images inside the existing public folder.
+    image_dir = Path("public/generated-images")
+    image_dir.mkdir(parents=True, exist_ok=True)
+
+    # Use the destination as a cache key.
+    image_key = hashlib.sha256(
+        destination.lower().encode("utf-8")
+    ).hexdigest()[:20]
+
+    image_path = image_dir / f"{image_key}.png"
+
+    # Reuse the existing image if this destination was generated before.
+    if image_path.exists():
+        return f"/generated-images/{image_path.name}"
+
+    client = get_client()
+
+    response = client.images.generate(
+        model="gpt-image-1",
+        prompt=(
+            f"Create a beautiful, high-quality travel photograph "
+            f"representing {destination}. Show recognizable scenery, "
+            f"attractive natural lighting, realistic photography, "
+            f"wide landscape composition. No text, no labels, "
+            f"no watermark."
+        ),
+        size="1536x1024",
+        quality="low",
+        n=1,
+    )
+
+    image_data = response.data[0].b64_json
+
+    if not image_data:
+        raise RuntimeError("The image API returned no image data.")
+
+    image_path.write_bytes(base64.b64decode(image_data))
+
+    return f"/generated-images/{image_path.name}"
