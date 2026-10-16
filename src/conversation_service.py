@@ -97,7 +97,7 @@ def handle_user_message(conversation_id, user_text):
     result = plan_next_turn(
         messages=recent_messages,
         current_state=current_state.model_dump(),
-        has_itinerary=existing_itinerary,
+        itinerary=existing_itinerary,
     )
 
     state = result.trip_state 
