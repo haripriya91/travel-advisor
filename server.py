@@ -2,6 +2,9 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from datetime import date
+from src.tools import get_weather_forecast, convert_currency
+
 from src.conversation_service import (
     start_conversation,
     handle_user_message,
@@ -23,6 +26,17 @@ app = FastAPI(
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
+
+class WeatherRequest(BaseModel):
+    city: str = Field(min_length=1, max_length=100)
+    start_date: date
+    days: int = Field(default=3, ge=1, le=16)
+
+
+class CurrencyRequest(BaseModel):
+    amount: float = Field(gt=0)
+    from_currency: str = Field(min_length=3, max_length=3)
+    to_currency: str = Field(min_length=3, max_length=3)
 
 
 @app.get("/api/health")
@@ -106,10 +120,43 @@ def usage():
     return get_usage_summary()
 
 
+
+@app.post("/api/tools/weather")
+def weather(request: WeatherRequest):
+    try:
+        result = get_weather_forecast(
+            city=request.city.strip(),
+            start_date=request.start_date.isoformat(),
+            days=request.days,
+        )
+        return result
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Weather request failed: {error}",
+        )
+
+
+@app.post("/api/tools/currency")
+def currency(request: CurrencyRequest):
+    try:
+        result = convert_currency(
+            amount=request.amount,
+            from_currency=request.from_currency.upper(),
+            to_currency=request.to_currency.upper(),
+        )
+        return result
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Currency conversion failed: {error}",
+        )
+
 from fastapi.staticfiles import StaticFiles
 
 app.mount(
     "/",
     StaticFiles(directory="public", html=True),
     name="frontend",
-)
+) 
+

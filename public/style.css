@@ -633,4 +633,180 @@ input:focus-visible {
   .messages { height: 42dvh; min-height: 230px; flex: none; }
   .chat-form button { flex-shrink: 0; white-space: nowrap; }
   .app-footer { margin-top: 14px; }
+} 
+
+
+/* Weather and Currency Converter tools */
+.tool-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 22px 0;
+  max-width: 750px;
 }
+
+.tool-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tool-form input,
+.tool-form select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #d7e4dd;
+  border-radius: 10px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.tool-form input:focus-visible,
+.tool-form select:focus-visible {
+  outline: 3px solid #6ec7b2;
+  outline-offset: 2px;
+}
+
+.tool-form button {
+  align-self: end;
+  justify-self: start;
+}
+
+.tool-results {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+
+.tool-results table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tool-results th,
+.tool-results td {
+  padding: 13px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.tool-results th {
+  background: #edf6f1;
+  color: var(--ink);
+}
+
+.tool-results p {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 550px) {
+  .tool-form {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-form button {
+    width: 100%;
+  }
+
+  .tool-results th,
+  .tool-results td {
+    padding: 9px;
+    font-size: 12px;
+  } 
+
+  
+/* Weather and Currency Converter tools */
+.tool-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 22px 0;
+  max-width: 750px;
+}
+
+.tool-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tool-form input,
+.tool-form select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #d7e4dd;
+  border-radius: 10px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.tool-form input:focus-visible,
+.tool-form select:focus-visible {
+  outline: 3px solid #6ec7b2;
+  outline-offset: 2px;
+}
+
+.tool-form button {
+  align-self: end;
+  justify-self: start;
+}
+
+.tool-results {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+
+.tool-results table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tool-results th,
+.tool-results td {
+  padding: 13px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.tool-results th {
+  background: #edf6f1;
+  color: var(--ink);
+}
+
+.tool-results p {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 550px) {
+  .tool-form {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-form button {
+    width: 100%;
+  }
+
+  .tool-results th,
+  .tool-results td {
+    padding: 9px;
+    font-size: 12px;
+  }
+}
+
+}
+

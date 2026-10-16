@@ -19,6 +19,14 @@ const newTripButton = $("newTrip");
 
 const chatTab = $("chatTab");
 const itineraryTab = $("itineraryTab");
+const weatherTab = $("weatherTab");
+const currencyTab = $("currencyTab");
+const weatherSection = $("weatherSection");
+const currencySection = $("currencySection");
+
+const weatherForm = $("weatherForm");
+const currencyForm = $("currencyForm");
+
 const chatView = $("chatView");
 const usageSection = $("usageSection");
 const itineraryBadge = $("itineraryBadge");
@@ -111,23 +119,21 @@ function showToast(message) {
 function showView(view) {
   activeView = view;
 
-  // Hide Chat and Itinerary tabs when viewing app-wide usage
   const tabs = document.querySelector(".tabs");
   tabs.hidden = view === "usage";
 
-  // Show the selected section
   chatView.hidden = view !== "chat";
   itinerarySection.hidden = view !== "itinerary";
+  weatherSection.hidden = view !== "weather";
+  currencySection.hidden = view !== "currency";
   usageSection.hidden = view !== "usage";
 
-  // Update active tab styles
   chatTab.classList.toggle("active", view === "chat");
   itineraryTab.classList.toggle("active", view === "itinerary");
+  weatherTab.classList.toggle("active", view === "weather");
+  currencyTab.classList.toggle("active", view === "currency");
 
-  sidebarUsageButton.classList.toggle(
-    "active",
-    view === "usage"
-  );
+  sidebarUsageButton.classList.toggle("active", view === "usage");
 
   if (view === "usage") {
     loadUsage();
@@ -161,6 +167,167 @@ backToChat.addEventListener("click", () => {
 
 refreshUsageButton.addEventListener("click", () => {
   loadUsage();
+});
+
+weatherTab.addEventListener("click", () => {
+  showView("weather");
+});
+
+currencyTab.addEventListener("click", () => {
+  showView("currency");
+});
+
+// -------------------------------------------
+// Weather Forecast
+// -------------------------------------------
+
+weatherForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const city = $("weatherCity").value.trim();
+  const startDate = $("weatherStartDate").value;
+  const days = Number($("weatherDays").value);
+
+  const status = $("weatherStatus");
+  const results = $("weatherResults");
+
+  results.replaceChildren();
+  status.textContent = "";
+
+  if (!city || !startDate || days < 1 || days > 16) {
+    status.textContent = "Please enter valid weather details.";
+    return;
+  }
+
+  status.textContent = "Loading weather forecast...";
+
+  try {
+    const data = await api("/api/tools/weather", {
+      method: "POST",
+      body: JSON.stringify({
+        city,
+        start_date: startDate,
+        days,
+      }),
+    });
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    status.textContent = `Forecast for ${data.location}`;
+
+    if (!data.forecast || data.forecast.length === 0) {
+      addText(results, "p", "No forecast data is available.");
+      return;
+    }
+
+    const table = document.createElement("table");
+    const header = document.createElement("tr");
+
+    [
+      "Date",
+      "Conditions",
+      "Min °C",
+      "Max °C",
+      "Rain chance",
+    ].forEach((heading) => {
+      addText(header, "th", heading);
+    });
+
+    table.appendChild(header);
+
+    for (const day of data.forecast) {
+      const row = document.createElement("tr");
+
+      addText(row, "td", day.date);
+      addText(row, "td", day.conditions);
+      addText(row, "td", `${day.temp_min_c}°`);
+      addText(row, "td", `${day.temp_max_c}°`);
+      addText(row, "td", `${day.rain_chance_percent}%`);
+
+      table.appendChild(row);
+    }
+
+    results.appendChild(table);
+
+    addText(
+      results,
+      "p",
+      "Forecast availability depends on the selected date and the weather provider."
+    );
+  } catch (error) {
+    status.textContent = `Could not load forecast: ${error.message}`;
+  }
+}); 
+
+// -------------------------------------------
+// Currency Converter
+// -------------------------------------------
+
+currencyForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const amount = Number($("currencyAmount").value);
+  const fromCurrency = $("fromCurrency").value;
+  const toCurrency = $("toCurrency").value;
+
+  const status = $("currencyStatus");
+  const results = $("currencyResults");
+
+  results.replaceChildren();
+  status.textContent = "";
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    status.textContent = "Please enter an amount greater than zero.";
+    return;
+  }
+
+  status.textContent = "Converting currency...";
+
+  try {
+    const data = await api("/api/tools/currency", {
+      method: "POST",
+      body: JSON.stringify({
+        amount,
+        from_currency: fromCurrency,
+        to_currency: toCurrency,
+      }),
+    });
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    if (data.converted == null) {
+      throw new Error("The exchange rate is unavailable.");
+    }
+
+    status.textContent = "Conversion complete";
+
+    addText(
+      results,
+      "h2",
+      `${formatAmount(data.amount)} ${data.from} = ` +
+      `${formatAmount(data.converted)} ${data.to}`
+    );
+
+    if (data.rate_date) {
+      addText(
+        results,
+        "p",
+        `Exchange-rate date: ${data.rate_date}`
+      );
+    }
+
+    addText(
+      results,
+      "p",
+      "Your bank or card provider may use a different exchange rate."
+    );
+  } catch (error) {
+    status.textContent = `Conversion failed: ${error.message}`;
+  }
 });
 
 
@@ -592,7 +759,18 @@ form.addEventListener("submit", async (event) => {
     setBusy(false);
   }
 });
+ 
 
+// Default weather date: today's local date
+const today = new Date();
+const localToday = [
+  today.getFullYear(),
+  String(today.getMonth() + 1).padStart(2, "0"),
+  String(today.getDate()).padStart(2, "0"),
+].join("-");
+
+$("weatherStartDate").value = localToday;
+$("weatherStartDate").min = localToday;
 
 // -------------------------------------------
 // Initialize application

@@ -1,161 +1,242 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TravelAdvisor AI</title>
-    <meta
-      name="description"
-      content="Your AI-powered travel planning assistant."
-    />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✈️%3C/text%3E%3C/svg%3E"
-    />
-    <link rel="stylesheet" href="style.css" />
-    <script src="script.js" defer></script>
-  </head>
-  <body>
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-icon">✈️</span>
-          <div>
-            <h2>TravelAdvisor</h2>
-            <span>AI Travel Planner</span>
-          </div>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TravelAdvisor AI</title>
+  <meta name="description" content="Your AI-powered travel planning assistant." />
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✈️%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
+</head>
+
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-icon">✈️</span>
+        <div>
+          <h2>TravelAdvisor</h2>
+          <span>AI Travel Planner</span>
         </div>
-        <button id="newTrip" class="new-trip-button" type="button">
-          <span>＋</span> New Trip
+      </div>
+      <button id="newTrip" class="new-trip-button" type="button">
+        <span>＋</span> New Trip
+      </button>
+      <div class="sidebar-heading">YOUR CONVERSATIONS</div>
+      <div id="conversations" class="conversation-list">
+        <p class="sidebar-empty">Loading trips...</p>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="sidebar-usage">
+          <div class="sidebar-usage-title">📊 App-wide API Usage</div>
+          <p>Combined AI requests and token consumption across all trips.</p>
+          <button id="sidebarUsageButton" type="button">
+            View overall usage →
+          </button>
+        </div>
+        <div class="sidebar-footer">Powered by AI ✨</div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="hero">
+        <div class="hero-content">
+          <div class="eyebrow">YOUR AI TRAVEL COMPANION</div>
+          <h1>Where to next? <span>✈️</span></h1>
+        </div>
+        <p>Discover. Plan. Explore.</p>
+      </header>
+      <nav class="tabs" aria-label="Trip views">
+        <button id="chatTab" class="tab active" type="button">
+          ✨ AI Chat
         </button>
-        <div class="sidebar-heading">YOUR CONVERSATIONS</div>
-        <div id="conversations" class="conversation-list">
-          <p class="sidebar-empty">Loading trips...</p>
+
+        <button id="itineraryTab" class="tab" type="button">
+          🗺️ Itinerary
+          <span id="itineraryBadge" class="ready-badge" hidden>Ready</span>
+        </button>
+
+        <button id="weatherTab" class="tab" type="button">
+          🌦️ Weather
+        </button>
+
+        <button id="currencyTab" class="tab" type="button">
+          💱 Currency Converter
+        </button>
+      </nav>
+      <section id="chatView" class="chat-view">
+        <div class="chat-heading">
+          <div class="assistant-avatar">✈</div>
+          <div>
+            <strong>TravelAdvisor Assistant</strong><span>Your personal AI trip planner</span>
+          </div>
+          <span class="assistant-status">● AI Assistant</span>
         </div>
-        <div class="sidebar-bottom">
-          <div class="sidebar-usage">
-            <div class="sidebar-usage-title">📊 App-wide API Usage</div>
-            <p>Combined AI requests and token consumption across all trips.</p>
-            <button id="sidebarUsageButton" type="button">
-              View overall usage →
-            </button>
+        <div id="messages" class="messages" aria-live="polite">
+          <div class="empty-chat">
+            <div class="empty-icon">🌴</div>
+            <h2>Let's plan something memorable!</h2>
+            <p>Tell me your destination, travel dates, or interests.</p>
           </div>
-          <div class="sidebar-footer">Powered by AI ✨</div>
         </div>
-      </aside>
-      <main class="main">
-        <header class="hero">
-          <div class="hero-content">
-            <div class="eyebrow">YOUR AI TRAVEL COMPANION</div>
-            <h1>Where to next? <span>✈️</span></h1>
+        <form id="chatForm" class="chat-form">
+          <input id="messageInput" type="text" placeholder="e.g. Plan a 4-day food trip to Italy..." maxlength="2000"
+            aria-label="Your travel message" required />
+          <button id="sendButton" type="submit">Send ➜</button>
+        </form>
+        <p id="status" class="status" role="status"></p>
+      </section>
+      <section id="itinerarySection" class="content-panel" hidden>
+        <div class="panel-heading">
+          <div>
+            <div class="eyebrow">YOUR JOURNEY, DAY BY DAY</div>
+            <h2>Your Itinerary</h2>
+            <p>A personalized plan for your next adventure.</p>
           </div>
-          <p>Discover. Plan. Explore.</p>
-        </header>
-        <nav class="tabs" aria-label="Trip views">
-          <button id="chatTab" class="tab active" type="button">
-            ✨ AI Chat
+          <button id="backToChat" class="secondary-button" type="button">
+            ← Back to Chat
           </button>
-          <button id="itineraryTab" class="tab" type="button">
-            🗺️ Itinerary
-            <span id="itineraryBadge" class="ready-badge" hidden>Ready</span>
+        </div>
+        <div id="itinerary"></div>
+        <div class="itinerary-actions">
+          <button id="downloadMarkdown" class="primary-button" type="button">
+            <span>↓</span> Download Markdown
           </button>
-        </nav>
-        <section id="chatView" class="chat-view">
-          <div class="chat-heading">
-            <div class="assistant-avatar">✈</div>
-            <div>
-              <strong>TravelAdvisor Assistant</strong
-              ><span>Your personal AI trip planner</span>
-            </div>
-            <span class="assistant-status">● AI Assistant</span>
+        </div>
+      </section>
+
+      <!-- weather section-->
+      <section id="weatherSection" class="content-panel" hidden>
+        <div class="panel-heading">
+          <div>
+            <div class="eyebrow">WEATHER FOR YOUR DESTINATION</div>
+            <h2>🌦️ Weather Forecast</h2>
+            <p>Check the forecast before you travel.</p>
           </div>
-          <div id="messages" class="messages" aria-live="polite">
-            <div class="empty-chat">
-              <div class="empty-icon">🌴</div>
-              <h2>Let's plan something memorable!</h2>
-              <p>Tell me your destination, travel dates, or interests.</p>
-            </div>
+        </div>
+
+        <form id="weatherForm" class="tool-form">
+          <label for="weatherCity">Destination city</label>
+          <input id="weatherCity" type="text" placeholder="e.g. Berlin" maxlength="100" required />
+
+          <label for="weatherStartDate">Forecast start date</label>
+          <input id="weatherStartDate" type="date" required />
+
+          <label for="weatherDays">Number of days</label>
+          <input id="weatherDays" type="number" min="1" max="16" value="3" required />
+
+          <button class="primary-button" type="submit">
+            Get Weather Forecast
+          </button>
+        </form>
+        <p id="weatherStatus" role="status"></p>
+        <div id="weatherResults"></div>
+      </section>
+
+      <section id="currencySection" class="content-panel" hidden>
+        <div class="panel-heading">
+          <div>
+            <div class="eyebrow">TRAVEL MONEY</div>
+            <h2>💱 Currency Converter</h2>
+            <p>Convert currencies for your travel budget.</p>
           </div>
-          <form id="chatForm" class="chat-form">
-            <input
-              id="messageInput"
-              type="text"
-              placeholder="e.g. Plan a 4-day food trip to Italy..."
-              maxlength="2000"
-              aria-label="Your travel message"
-              required
-            />
-            <button id="sendButton" type="submit">Send ➜</button>
-          </form>
-          <p id="status" class="status" role="status"></p>
-        </section>
-        <section id="itinerarySection" class="content-panel" hidden>
-          <div class="panel-heading">
-            <div>
-              <div class="eyebrow">YOUR JOURNEY, DAY BY DAY</div>
-              <h2>Your Itinerary</h2>
-              <p>A personalized plan for your next adventure.</p>
-            </div>
-            <button id="backToChat" class="secondary-button" type="button">
-              ← Back to Chat
-            </button>
-          </div>
-          <div id="itinerary"></div>
-          <div class="itinerary-actions">
-            <button id="downloadMarkdown" class="primary-button" type="button">
-              <span>↓</span> Download Markdown
-            </button>
-          </div>
-        </section>
-        <section id="usageSection" class="content-panel" hidden>
-          <div class="panel-heading">
-            <div>
-              <div class="eyebrow">APPLICATION STATISTICS · ALL TRIPS</div>
-              <h2>App-wide API Usage</h2>
-              <p>
-                Combined OpenAI API usage across all TravelAdvisor
-                conversations, not just the selected trip.
-              </p>
-            </div>
-            <button id="refreshUsage" class="secondary-button" type="button">
-              ↻ Refresh
-            </button>
-          </div>
-          <div class="usage-grid">
-            <div class="metric-card">
-              <div class="metric-icon">↗</div>
-              <div class="metric-label">Total API Requests</div>
-              <div id="totalRequests" class="metric-value">—</div>
-              <div class="metric-caption">Recorded AI calls</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-icon">◈</div>
-              <div class="metric-label">Total Tokens</div>
-              <div id="totalTokens" class="metric-value">—</div>
-              <div class="metric-caption">Input + output tokens</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-icon">$</div>
-              <div class="metric-label">Estimated API Cost</div>
-              <div id="totalCost" class="metric-value">—</div>
-              <div class="metric-caption">Estimated USD</div>
-            </div>
-          </div>
-          <div class="usage-info">
-            <h3>About these statistics</h3>
-            <p id="usageNote">Loading usage information...</p>
+        </div>
+
+        <form id="currencyForm" class="tool-form">
+          <label for="currencyAmount">Amount</label>
+          <input id="currencyAmount" type="number" min="0.01" step="any" value="100" required />
+
+          <label for="fromCurrency">From currency</label>
+          <select id="fromCurrency">
+            <option value="EUR">EUR — Euro</option>
+            <option value="USD">USD — US Dollar</option>
+            <option value="GBP">GBP — British Pound</option>
+            <option value="CHF">CHF — Swiss Franc</option>
+            <option value="JPY">JPY — Japanese Yen</option>
+            <option value="INR">INR — Indian Rupee</option>
+            <option value="CAD">CAD — Canadian Dollar</option>
+            <option value="AUD">AUD — Australian Dollar</option>
+            <option value="CNY">CNY — Chinese Yuan</option>
+            <option value="SGD">SGD — Singapore Dollar</option>
+          </select>
+
+          <label for="toCurrency">To currency</label>
+          <select id="toCurrency">
+            <option value="USD">USD — US Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="GBP">GBP — British Pound</option>
+            <option value="CHF">CHF — Swiss Franc</option>
+            <option value="JPY">JPY — Japanese Yen</option>
+            <option value="INR">INR — Indian Rupee</option>
+            <option value="CAD">CAD — Canadian Dollar</option>
+            <option value="AUD">AUD — Australian Dollar</option>
+            <option value="CNY">CNY — Chinese Yuan</option>
+            <option value="SGD">SGD — Singapore Dollar</option>
+          </select>
+
+          <button class="primary-button" type="submit">
+            Convert Currency
+          </button>
+        </form>
+
+        <p id="currencyStatus" role="status"></p>
+        <div id="currencyResults"></div>
+      </section>
+
+
+      <!-- useage section-->
+      <section id="usageSection" class="content-panel" hidden>
+        <div class="panel-heading">
+          <div>
+            <div class="eyebrow">APPLICATION STATISTICS · ALL TRIPS</div>
+            <h2>App-wide API Usage</h2>
             <p>
-              Costs are estimates based on the model pricing configured in the
-              application.
+              Combined OpenAI API usage across all TravelAdvisor
+              conversations, not just the selected trip.
             </p>
           </div>
-        </section>
-        <div id="toast" class="toast" role="status" hidden></div>
-        <footer class="app-footer">
-          TravelAdvisor is AI and can make mistakes. Please double-check
-          responses.
-        </footer>
-      </main>
-    </div>
-  </body>
+          <button id="refreshUsage" class="secondary-button" type="button">
+            ↻ Refresh
+          </button>
+        </div>
+        <div class="usage-grid">
+          <div class="metric-card">
+            <div class="metric-icon">↗</div>
+            <div class="metric-label">Total API Requests</div>
+            <div id="totalRequests" class="metric-value">—</div>
+            <div class="metric-caption">Recorded AI calls</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">◈</div>
+            <div class="metric-label">Total Tokens</div>
+            <div id="totalTokens" class="metric-value">—</div>
+            <div class="metric-caption">Input + output tokens</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">$</div>
+            <div class="metric-label">Estimated API Cost</div>
+            <div id="totalCost" class="metric-value">—</div>
+            <div class="metric-caption">Estimated USD</div>
+          </div>
+        </div>
+        <div class="usage-info">
+          <h3>About these statistics</h3>
+          <p id="usageNote">Loading usage information...</p>
+          <p>
+            Costs are estimates based on the model pricing configured in the
+            application.
+          </p>
+        </div>
+      </section>
+      <div id="toast" class="toast" role="status" hidden></div>
+      <footer class="app-footer">
+        TravelAdvisor is AI and can make mistakes. Please double-check
+        responses.
+      </footer>
+    </main>
+  </div>
+</body>
+
 </html>
