@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from datetime import date
 from src.tools import get_weather_forecast, convert_currency
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.conversation_service import (
     start_conversation,
@@ -23,6 +24,17 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://travel-advisor-frontend.vercel.app",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
