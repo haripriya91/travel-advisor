@@ -16,7 +16,7 @@ from src.repository import (
 )
 
 from src.schemas import TripState, TravelItinerary
-
+from src.security_service import validate_user_message
 
 HISTORY_LIMIT = 20
 
@@ -57,7 +57,7 @@ def has_required_details(state: TripState) -> bool:
 def handle_user_message(conversation_id, user_text):
     """Process a message and generate an itinerary when appropriate."""
 
-    user_text = user_text.strip()
+    user_text = validate_user_message(user_text)
 
     if not user_text:
         raise ValueError("Please enter a message.")
@@ -97,7 +97,7 @@ def handle_user_message(conversation_id, user_text):
     result = plan_next_turn(
         messages=recent_messages,
         current_state=current_state.model_dump(),
-        itinerary=existing_itinerary,
+        itinerary=existing_itinerary,     
     )
 
     state = result.trip_state 
