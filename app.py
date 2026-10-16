@@ -13,6 +13,13 @@ from src.conversation_service import (
     start_conversation,
 )
 
+from datetime import date, timedelta
+
+from src.tools import (
+    get_weather_forecast,
+    convert_currency,
+)
+
 
 # --------------------------------------------------
 # 1. Page configuration and database initialization
@@ -39,9 +46,7 @@ with st.sidebar:
 
     if st.button("＋ New trip", use_container_width=True):
         conversation_id = start_conversation()
-
         st.session_state["conversation_id"] = conversation_id
-
         st.rerun()
 
     conversations = list_conversations()
@@ -50,20 +55,28 @@ with st.sidebar:
         st.info("Start a new trip to begin.")
         st.stop()
 
+    # Get the IDs of all saved conversations.
     conversation_ids = [
         item["id"]
         for item in conversations
     ]
 
-    selected_id = st.session_state.get("conversation_id")
-
-    if selected_id not in conversation_ids:
-        selected_id = conversation_ids[0]
-
+    # Show the title, creation time, and short ID.
     labels = {
-        item["id"]: item["title"]
+        item["id"]: (
+            f"{item['title']} — "
+            f"{item['created_at']} — "
+            f"{item['id'][:8]}"
+        )
         for item in conversations
     }
+
+    # Select the current conversation.
+    selected_id = st.session_state.get("conversation_id")
+
+    # If no valid conversation is selected, use the newest one.
+    if selected_id not in conversation_ids:
+        selected_id = conversation_ids[0]
 
     selected_id = st.selectbox(
         "Saved trips",
@@ -72,10 +85,134 @@ with st.sidebar:
         format_func=lambda cid: labels[cid],
     )
 
+    # Save the selected conversation ID.
     st.session_state["conversation_id"] = selected_id
 
     st.divider()
-    
+
+    # extra tools 
+
+    st.sidebar.divider()
+    st.sidebar.subheader("Travel Tools")
+
+    if st.sidebar.button(
+        "🌦️ Weather Forecast",
+        use_container_width=True,
+    ):
+        st.session_state["active_tool"] = "weather"
+
+    if st.sidebar.button(
+        "💱 Currency Converter",
+        use_container_width=True,
+    ):
+        st.session_state["active_tool"] = "currency"
+
+
+    # Show the selected travel tool
+    active_tool = st.session_state.get("active_tool")
+
+    if active_tool == "weather":
+        st.subheader("🌦️ Weather Forecast")
+
+        city = st.text_input(
+            "Destination city",
+            key="weather_city",
+            placeholder="e.g. Berlin",
+        )
+
+        weather_start = st.date_input(
+            "Forecast start date",
+            value=date.today(),
+            key="weather_start",
+        )
+
+        weather_days = st.number_input(
+            "Number of days",
+            min_value=1,
+            max_value=16,
+            value=3,
+            key="weather_days",
+        )
+
+        if st.button("Get Weather Forecast"):
+            if not city.strip():
+                st.warning("Please enter a destination city.")
+            else:
+                result = get_weather_forecast(
+                    city=city.strip(),
+                    start_date=weather_start.isoformat(),
+                    days=int(weather_days),
+                )
+
+                if result.get("error"):
+                    st.error(result["error"])
+                else:
+                    st.dataframe(
+                        result["forecast"],
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+    elif active_tool == "currency":
+        st.subheader("💱 Currency Converter")
+
+        currencies = [
+            "EUR", "USD", "GBP", "JPY", "CHF",
+            "CAD", "AUD", "INR", "CNY", "SGD",
+        ]
+
+        amount = st.number_input(
+            "Amount",
+            min_value=0.01,
+            value=100.0,
+            key="currency_amount",
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            from_currency = st.selectbox(
+                "From",
+                currencies,
+                index=0,
+                key="currency_from",
+            )
+
+        with col2:
+            to_currency = st.selectbox(
+                "To",
+                currencies,
+                index=1,
+                key="currency_to",
+            )
+
+        if st.button("Convert Currency"):
+            result = convert_currency(
+                amount=float(amount),
+                from_currency=from_currency,
+                to_currency=to_currency,
+            )
+
+            if result.get("error"):
+                st.error(result["error"])
+            elif result.get("converted") is not None:
+                st.success(
+                    f"{result['amount']:.2f} {result['from']} = "
+                    f"{result['converted']:.2f} {result['to']}"
+                )
+            else:
+                st.error("The exchange rate could not be retrieved.")    
+
+
+
+
+
+
+
+
+
+
+
     st.subheader("📊 API Usage")
 
     usage_summary = get_usage_summary()
@@ -105,6 +242,7 @@ with st.sidebar:
         )
 
     st.caption("Local usage history · Estimated USD")
+
 
 
 # --------------------------------------------------
@@ -239,8 +377,9 @@ if itinerary:
         data="\n".join(markdown),
         file_name="traveladvisor_itinerary.md",
         mime="text/markdown",
-    )
+    ) 
 
+    
 
 # --------------------------------------------------
 # 6. Handle new user messages
@@ -265,3 +404,5 @@ if prompt := st.chat_input("Where would you like to travel?"):
                 "Your submitted message may already be saved. "
                 "Check the conversation history before retrying."
             )
+
+

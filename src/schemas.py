@@ -35,6 +35,9 @@ class TripState(BaseModel):
 
     currency: str = "EUR"
 
+    # Optional trip start date, format YYYY-MM-DD (used for weather forecasts)
+    start_date: str | None = None
+
 
 class Activity(BaseModel):
     time: str
@@ -79,6 +82,13 @@ class TravelItinerary(BaseModel):
     # Explains what the estimated budget covers.
     # Example: "Total for 2 adults and 1 child"
     budget_basis: str
+
+    # Added for external data (weather, transport, currency)
+    weather_summary: str | None = None
+
+    transport_tips: list[str] = Field(default_factory=list)
+
+    currency_note: str | None = None
 
     @model_validator(mode="after")
     def check_day_count(self):

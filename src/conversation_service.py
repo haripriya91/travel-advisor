@@ -18,7 +18,7 @@ from src.repository import (
 from src.schemas import TripState, TravelItinerary
 from src.security_service import validate_user_message
 
-HISTORY_LIMIT = 6
+HISTORY_LIMIT = 20
 
 
 def start_conversation():
@@ -97,10 +97,10 @@ def handle_user_message(conversation_id, user_text):
     result = plan_next_turn(
         messages=recent_messages,
         current_state=current_state.model_dump(),
-        has_itinerary=has_itinerary,
+        itinerary=existing_itinerary,     
     )
 
-    state = result.trip_state
+    state = result.trip_state 
 
     # Step 7: Save updated trip information.
     # Preserve confirmed details when clarification is needed.
