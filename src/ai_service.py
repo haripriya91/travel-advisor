@@ -50,7 +50,7 @@ def get_model():
 
 
 def log_usage(response, task):
-    """Log OpenAI usage and save it to SQLite."""
+    """Log OpenAI usage and save it to PostgreSQL."""
 
     usage_data = extract_usage(response, task)
 

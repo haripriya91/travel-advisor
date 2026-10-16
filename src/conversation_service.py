@@ -69,7 +69,7 @@ def handle_user_message(conversation_id, user_text):
         user_text,
     )
 
-    # Step 2: Retrieve conversation history from SQLite.
+    # Step 2: Retrieve conversation history from PostgreSQL.
     history = get_messages(conversation_id)
 
     # Step 3: Load previously collected trip information.
@@ -187,7 +187,7 @@ def handle_user_message(conversation_id, user_text):
     # Normalize destination to the requested destination.
     validated_itinerary.destination = state.destination.strip()
 
-    # Step 13: Save the itinerary to SQLite.
+    # Step 13: Save the itinerary to PostgreSQL.
     save_itinerary(
         conversation_id,
         validated_itinerary.model_dump(),
