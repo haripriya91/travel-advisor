@@ -222,8 +222,13 @@ weatherForm.addEventListener("submit", async (event) => {
       return;
     }
 
+
     const table = document.createElement("table");
+    table.classList.add("weather-table");
+
+    const thead = document.createElement("thead");
     const header = document.createElement("tr");
+
 
     [
       "Date",
@@ -235,7 +240,10 @@ weatherForm.addEventListener("submit", async (event) => {
       addText(header, "th", heading);
     });
 
-    table.appendChild(header);
+    thead.appendChild(header);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");   
 
     for (const day of data.forecast) {
       const row = document.createElement("tr");
@@ -246,8 +254,10 @@ weatherForm.addEventListener("submit", async (event) => {
       addText(row, "td", `${day.temp_max_c}°`);
       addText(row, "td", `${day.rain_chance_percent}%`);
 
-      table.appendChild(row);
+      tbody.appendChild(row);
     }
+
+    table.appendChild(tbody);
 
     results.appendChild(table);
 
