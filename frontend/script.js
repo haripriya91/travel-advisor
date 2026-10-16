@@ -41,9 +41,10 @@ const downloadButton = $("downloadMarkdown");
 // -------------------------------------------
 // API helper
 // -------------------------------------------
+const API_BASE_URL = "https://travel-advisor-api-omega.vercel.app";
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
