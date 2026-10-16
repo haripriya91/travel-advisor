@@ -1,6 +1,7 @@
-from contextlib import closing
-from src.database import get_connection
+
 from decimal import Decimal
+
+from src.database import get_connection
 
 
 # USD per 1 million tokens.
@@ -87,43 +88,43 @@ def extract_usage(response, task: str):
         ),
     }
 
+
 def save_api_usage(usage_data):
-    """Save one OpenAI request's usage to SQLite."""
+    """Save one OpenAI request's usage to PostgreSQL."""
 
     if usage_data is None:
         return
 
-    with closing(get_connection()) as connection:
-        with connection:
-            connection.execute(
-                """
-                INSERT INTO api_usage (
-                    task,
-                    model,
-                    input_tokens,
-                    output_tokens,
-                    cached_tokens,
-                    total_tokens,
-                    estimated_cost_usd
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    usage_data["task"],
-                    usage_data["model"],
-                    usage_data["input_tokens"],
-                    usage_data["output_tokens"],
-                    usage_data["cached_tokens"],
-                    usage_data["total_tokens"],
-                    usage_data["estimated_cost_usd"],
-                ),
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO api_usage (
+                task,
+                model,
+                input_tokens,
+                output_tokens,
+                cached_tokens,
+                total_tokens,
+                estimated_cost_usd
             )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                usage_data["task"],
+                usage_data["model"],
+                usage_data["input_tokens"],
+                usage_data["output_tokens"],
+                usage_data["cached_tokens"],
+                usage_data["total_tokens"],
+                usage_data["estimated_cost_usd"],
+            ),
+        )
 
 
 def get_usage_summary():
     """Return total recorded tokens and estimated API cost."""
 
-    with closing(get_connection()) as connection:
+    with get_connection() as connection:
         row = connection.execute(
             """
             SELECT
@@ -136,3 +137,10 @@ def get_usage_summary():
         ).fetchone()
 
     return dict(row)
+
+
+def log_usage(response, task: str):
+    """Extract and save token usage from an OpenAI response."""
+    usage_data = extract_usage(response, task)
+    save_api_usage(usage_data)
+    return usage_data
