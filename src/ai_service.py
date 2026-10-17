@@ -209,8 +209,6 @@ def plan_next_turn(messages, current_state, itinerary=None):
     Return a structured TravelTurn response.
     """
 
-    itinerary_text = json.dumps(itinerary) if itinerary else "None yet"
-
     itinerary_text = (
         itinerary.model_dump_json()
         if hasattr(itinerary, "model_dump_json")

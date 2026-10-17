@@ -198,7 +198,7 @@ def handle_user_message(conversation_id, user_text):
         f"I've prepared your {state.duration_days}-day "
         f"trip to {state.destination} "
         f"for {state.travelers} traveler(s)! "
-        "Your itinerary is ready below."
+        "View your travel plan in the Itinerary tab."
     )
 
     save_message(

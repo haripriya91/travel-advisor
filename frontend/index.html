@@ -6,8 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TravelAdvisor AI</title>
   <meta name="description" content="Your AI-powered travel planning assistant." />
-  <link rel="icon"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✈️%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" type="image/svg+xml" href="assets/travel-plane.svg" />
   <link rel="stylesheet" href="style.css" />
   <script src="script.js" defer></script>
 </head>
@@ -16,7 +15,9 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-icon">✈️</span>
+        <span class="brand-icon">
+          <img src="assets/travel-plane.svg" alt="" class="plane-icon" />
+        </span>
         <div>
           <h2>TravelAdvisor</h2>
           <span>AI Travel Planner</span>
@@ -44,7 +45,7 @@
       <header class="hero">
         <div class="hero-content">
           <div class="eyebrow">YOUR AI TRAVEL COMPANION</div>
-          <h1>Where to next? <span>✈️</span></h1>
+          <h1>Where to next?   <img src="assets/travel-plane.svg" alt="" class="hero-plane" /></h1>
         </div>
         <p>Discover. Plan. Explore.</p>
       </header>
@@ -68,7 +69,9 @@
       </nav>
       <section id="chatView" class="chat-view">
         <div class="chat-heading">
-          <div class="assistant-avatar">✈</div>
+          <div class="assistant-avatar">
+            <img src="assets/travel-plane.svg" alt="" class="plane-icon" />
+          </div>
           <div>
             <strong>TravelAdvisor Assistant</strong><span>Your personal AI trip planner</span>
           </div>
@@ -77,7 +80,7 @@
         <div id="messages" class="messages" aria-live="polite">
           <div class="empty-chat">
             <div class="empty-icon">🌴</div>
-            <h2>Let's plan something memorable!</h2>
+            <h2>Hi, let's plan something memorable!</h2>
             <p>Tell me your destination, travel dates, or interests.</p>
           </div>
         </div>

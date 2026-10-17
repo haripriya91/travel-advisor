@@ -1,3 +1,9 @@
+"""Expose TravelAdvisor's conversation, usage, and travel-tool APIs.
+
+This module handles HTTP requests and request validation.
+Conversation logic, database access, and external tool calls
+are delegated to their respective services.
+"""
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -18,11 +24,16 @@ from src.repository import (
 )
 from src.usage_service import get_usage_summary
 
+# Create the API application and configure its /docs metadata.
 
 app = FastAPI(
     title="TravelAdvisor AI API",
     version="1.0.0",
 )
+
+# Allow the deployed frontend and local development frontend
+# to make browser requests to this API.
+# CORS does not provide authentication or conversation ownership checks.
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +46,9 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
+
+# Request schemas define the JSON bodies accepted by POST routes.
+# FastAPI validates these before calling the endpoint function.
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
@@ -53,11 +67,16 @@ class CurrencyRequest(BaseModel):
 
 @app.get("/api/health")
 def health():
+    """Confirm that the API can respond.
+
+    This endpoint does not check database or external-provider access.
+    """
     return {"status": "ok"}
 
 
 @app.post("/api/conversations", status_code=201)
 def create_conversation():
+    """Create a conversation and return its ID and initial messages."""
     conversation_id = start_conversation()
 
     return {
@@ -68,11 +87,16 @@ def create_conversation():
 
 @app.get("/api/conversations")
 def conversations():
+    """Return saved conversations for the frontend sidebar."""
     return list_conversations()
 
 
 @app.get("/api/conversations/{conversation_id}")
 def conversation_details(conversation_id: str):
+    """Return a saved conversation's messages, trip state, and itinerary.
+
+    Raise HTTP 404 if the conversation does not exist.
+    """
     messages = get_messages(conversation_id)
     conversations_list = list_conversations()
 
@@ -97,6 +121,14 @@ def conversation_details(conversation_id: str):
 
 @app.post("/api/conversations/{conversation_id}/messages")
 def send_message(conversation_id: str, request: ChatRequest):
+    """Process a user message and return the updated conversation.
+
+    The conversation service decides whether to answer, ask a
+    follow-up question, or generate an itinerary.
+
+    Raise HTTP 404 for an unknown conversation and HTTP 400
+    for ValueError exceptions raised during processing.
+    """
     conversations_list = list_conversations()
 
     if not any(
@@ -129,12 +161,18 @@ def send_message(conversation_id: str, request: ChatRequest):
 
 @app.get("/api/usage")
 def usage():
+    """Return aggregate recorded AI usage and estimated costs."""
     return get_usage_summary()
 
 
 
 @app.post("/api/tools/weather")
 def weather(request: WeatherRequest):
+    """Fetch a forecast directly for the frontend weather form.
+
+    Convert the validated date to the string format expected
+    by the weather tool. Raised exceptions become HTTP 500 responses.
+    """
     try:
         result = get_weather_forecast(
             city=request.city.strip(),
@@ -151,6 +189,11 @@ def weather(request: WeatherRequest):
 
 @app.post("/api/tools/currency")
 def currency(request: CurrencyRequest):
+    """Convert an amount directly for the frontend currency form.
+
+    Normalize currency codes to uppercase before calling the tool.
+    Raised exceptions become HTTP 500 responses.
+    """
     try:
         result = convert_currency(
             amount=request.amount,

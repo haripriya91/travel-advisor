@@ -729,4 +729,157 @@ input:focus-visible {
   }
 }
 
+#messages {
+  padding: 20px;
+}
 
+.chat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.chat-row.user {
+  flex-direction: row-reverse;
+}
+
+.chat-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  box-sizing: border-box;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 10%);
+  font-size: 22px;
+}
+
+.chat-avatar.assistant {
+  background: #dff3eb;
+}
+
+.chat-avatar.user {
+  background: #e1ecff;
+}
+
+.chat-body {
+  min-width: 0;
+  max-width: 78%;
+}
+
+.chat-speaker {
+  margin: 0 4px 5px;
+  color: #526b64;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chat-row.user .chat-speaker {
+  text-align: right;
+}
+
+#messages .message {
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 13px 17px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#messages .message.assistant {
+  background: #f2f5f4;
+  color: #203b36;
+  border: 1px solid #e2e9e6;
+  border-radius: 4px 18px 18px 18px;
+}
+
+#messages .message.user {
+  margin-left: auto;
+  background: #128574;
+  color: white;
+  border-radius: 18px 4px 18px 18px;
+}
+
+.chat-typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0 17px;
+  background: #f2f5f4;
+  border: 1px solid #e2e9e6;
+  border-radius: 4px 18px 18px 18px;
+}
+
+.chat-typing-bubble span {
+  display: inline-block;
+  color: #548276;
+  font-size: 15px;
+  animation: advisor-dot-bounce 1s ease-in-out infinite;
+}
+
+.chat-typing-bubble span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chat-typing-bubble span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes advisor-dot-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-typing-bubble span {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.brand-icon,
+.assistant-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: #dff3eb;
+  border-radius: 12px;
+}
+
+.plane-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.hero-plane {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+}
+
+.chat-avatar img {
+  display: block;
+  width: 22px;
+  height: 22px;
+}

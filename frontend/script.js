@@ -88,6 +88,42 @@ function addText(parent, tag, value, className = "") {
   return element;
 }
 
+function hideTypingIndicator() {
+  document.getElementById("typingIndicator")?.remove();
+}
+
+function showTypingIndicator() {
+  hideTypingIndicator();
+  messagesEl.querySelector(".empty-chat")?.remove();
+
+  const row = document.createElement("div");
+  row.id = "typingIndicator";
+  row.className = "chat-row assistant";
+  row.setAttribute("role", "status");
+  row.setAttribute("aria-label", "TravelAdvisor is preparing a reply");
+
+  const body = document.createElement("div");
+  body.className = "chat-body";
+
+  addText(body, "div", "TravelAdvisor", "chat-speaker");
+
+  const bubble = document.createElement("div");
+  bubble.className = "chat-typing-bubble";
+  bubble.setAttribute("aria-hidden", "true");
+
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement("span");
+    dot.textContent = "●";
+    bubble.appendChild(dot);
+  }
+
+  body.appendChild(bubble);
+  row.append(createChatAvatar(), body);
+  messagesEl.appendChild(row);
+
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
 function setBusy(value) {
   busy = value;
 
@@ -96,13 +132,10 @@ function setBusy(value) {
   input.disabled = value;
 
   if (value) {
-    statusEl.textContent =
-      "TravelAdvisor is planning your journey...";
-  } else if (
-    statusEl.textContent ===
-    "TravelAdvisor is planning your journey..."
-  ) {
+    showTypingIndicator();
     statusEl.textContent = "";
+  } else {
+    hideTypingIndicator();
   }
 }
 
@@ -345,16 +378,58 @@ currencyForm.addEventListener("submit", async (event) => {
 // -------------------------------------------
 // Chat messages
 // -------------------------------------------
+function createChatAvatar() {
+  const avatar = document.createElement("div");
+  avatar.className = "chat-avatar assistant";
+  avatar.setAttribute("aria-hidden", "true");
+
+  const icon = document.createElement("img");
+  icon.src = "assets/travel-plane.svg";
+  icon.alt = "";
+  icon.width = 22;
+  icon.height = 22;
+
+  avatar.appendChild(icon);
+  return avatar;
+}
+
+function appendChatMessage(role, content) {
+  const speaker = role === "user" ? "user" : "assistant";
+
+  const row = document.createElement("div");
+  row.className = `chat-row ${speaker}`;
+
+  const body = document.createElement("div");
+  body.className = "chat-body";
+
+  addText(
+    body,
+    "div",
+    speaker === "user" ? "" : "TravelAdvisor",
+    "chat-speaker"
+  );
+
+  addText(body, "div", content, `message ${speaker}`);
+
+  if (speaker === "assistant") {
+    row.appendChild(createChatAvatar());
+  }
+
+  row.appendChild(body);
+  messagesEl.appendChild(row);
+
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
 
 function renderMessages(messages) {
   messagesEl.replaceChildren();
 
-  if (!messages || messages.length === 0) {
+  if (!messages?.length) {
     const empty = document.createElement("div");
     empty.className = "empty-chat";
 
     addText(empty, "div", "🌴", "empty-icon");
-    addText(empty, "h2", "Let's plan something memorable!");
+    addText(empty, "h2", "Hi, let's plan something memorable!");
     addText(
       empty,
       "p",
@@ -366,15 +441,8 @@ function renderMessages(messages) {
   }
 
   for (const message of messages) {
-    addText(
-      messagesEl,
-      "div",
-      message.content,
-      `message ${message.role}`
-    );
+    appendChatMessage(message.role, message.content);
   }
-
-  messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
 
@@ -588,7 +656,6 @@ async function loadUsage() {
     $("totalTokens").textContent =
       tokens.toLocaleString();
 
-    // Same logic as the old Streamlit application.
     if (priced === requests) {
       const cost = Number(usage.total_cost_usd || 0);
 
@@ -727,6 +794,13 @@ form.addEventListener("submit", async (event) => {
   if (!message || busy) return;
 
   statusEl.textContent = "";
+
+  messagesEl.querySelector(".empty-chat")?.remove();
+
+  appendChatMessage("user", message); 
+  
+  input.value = "";
+
   setBusy(true);
 
   try {
